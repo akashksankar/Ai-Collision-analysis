@@ -61,6 +61,11 @@
             width: 100%;
             max-width: 640px;
         }
+        #error {
+            color: red;
+            margin-top: 10px;
+            display: none;
+        }
         .detection {
             margin: 10px 0;
             padding: 10px;
@@ -89,6 +94,8 @@
         <button id="stopBtn" disabled>Stop Camera</button>
     </div>
     
+    <div id="error"></div>
+    
     <div id="info">
         <h3>Real-time Analysis</h3>
         <div id="detections"></div>
@@ -100,41 +107,80 @@
         let ctx = canvas.getContext('2d');
         let startBtn = document.getElementById('startBtn');
         let stopBtn = document.getElementById('stopBtn');
+        let errorDiv = document.getElementById('error');
         let detectionsDiv = document.getElementById('detections');
         
         let model;
+        let stream = null;
         let isDetecting = false;
-        let vehicleTracks = {}; // Simple tracking: {id: {positions: [], speeds: [], distances: []}}
+        let vehicleTracks = {};
         let nextId = 0;
         
-        // Vehicle classes from COCO-SSD
         const vehicleClasses = ['car', 'truck', 'bus', 'motorcycle'];
-        
-        // Assumptions for estimation (simplified; in reality, calibrate with known distances)
-        const ASSUMED_FOCAL_LENGTH = 800; // Pixels (approximate for phone camera)
-        const AVERAGE_VEHICLE_WIDTH = 1.8; // meters
-        const FPS = 30; // Approximate frame rate
-        const USER_SPEED = 20; // m/s (assumed user speed, e.g., 72 km/h; adjust via input if needed)
+        const ASSUMED_FOCAL_LENGTH = 800;
+        const AVERAGE_VEHICLE_WIDTH = 1.8;
+        const FPS = 30;
+        const USER_SPEED = 20; // m/s (72 km/h)
         
         async function initModel() {
-            model = await cocoSsd.load();
-            console.log('Model loaded');
+            try {
+                model = await cocoSsd.load();
+                errorDiv.textContent = 'Model loaded successfully';
+                errorDiv.style.color = 'green';
+                errorDiv.style.display = 'block';
+                setTimeout(() => errorDiv.style.display = 'none', 3000);
+            } catch (err) {
+                showError('Failed to load model: ' + err.message);
+            }
         }
         
         async function setupCamera() {
             try {
-                const stream = await navigator.mediaDevices.getUserMedia({
-                    video: { facingMode: 'environment', width: 640, height: 480 }
+                // Try preferred constraints (rear camera)
+                stream = await navigator.mediaDevices.getUserMedia({
+                    video: {
+                        facingMode: 'environment',
+                        width: { ideal: 640 },
+                        height: { ideal: 480 }
+                    }
                 });
-                video.srcObject = stream;
-                video.onloadedmetadata = () => {
-                    canvas.width = video.videoWidth;
-                    canvas.height = video.videoHeight;
-                    video.play();
-                };
             } catch (err) {
-                alert('Error accessing camera: ' + err.message);
+                // Fallback to any available camera
+                try {
+                    stream = await navigator.mediaDevices.getUserMedia({
+                        video: {
+                            width: { ideal: 640 },
+                            height: { ideal: 480 }
+                        }
+                    });
+                    showError('Rear camera unavailable, using default camera', false);
+                } catch (fallbackErr) {
+                    showError('Camera access failed: ' + fallbackErr.message);
+                    return false;
+                }
             }
+            
+            try {
+                video.srcObject = stream;
+                await new Promise(resolve => {
+                    video.onloadedmetadata = () => {
+                        canvas.width = video.videoWidth;
+                        canvas.height = video.videoHeight;
+                        video.play();
+                        resolve();
+                    };
+                });
+                return true;
+            } catch (err) {
+                showError('Video setup failed: ' + err.message);
+                return false;
+            }
+        }
+        
+        function showError(message, isWarning = true) {
+            errorDiv.textContent = message;
+            errorDiv.style.color = isWarning ? 'orange' : 'red';
+            errorDiv.style.display = 'block';
         }
         
         function startDetection() {
@@ -144,120 +190,116 @@
         
         function stopDetection() {
             isDetecting = false;
-            video.srcObject.getTracks().forEach(track => track.stop());
+            if (stream) {
+                stream.getTracks().forEach(track => track.stop());
+                stream = null;
+            }
+            video.srcObject = null;
             startBtn.disabled = false;
             stopBtn.disabled = true;
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+            detectionsDiv.innerHTML = '';
+            errorDiv.style.display = 'none';
         }
         
         async function detectFrame() {
             if (!isDetecting || !model) return;
             
-            const predictions = await model.detect(video);
-            ctx.clearRect(0, 0, canvas.width, canvas.height);
-            
-            let currentDetections = [];
-            
-            predictions.forEach(pred => {
-                if (vehicleClasses.includes(pred.class)) {
-                    // Draw bounding box
-                    ctx.strokeStyle = '#00ff00';
-                    ctx.lineWidth = 2;
-                    ctx.strokeRect(pred.bbox[0], pred.bbox[1], pred.bbox[2], pred.bbox[3]);
-                    ctx.fillStyle = '#00ff00';
-                    ctx.font = '16px Arial';
-                    ctx.fillText(`${pred.class} ${Math.round(pred.score * 100)}%`, pred.bbox[0], pred.bbox[1] - 5);
-                    
-                    // Estimate distance (using bounding box width and assumed vehicle width)
-                    const bboxWidth = pred.bbox[2];
-                    const estimatedDistance = (AVERAGE_VEHICLE_WIDTH * ASSUMED_FOCAL_LENGTH) / bboxWidth; // meters
-                    
-                    // Simple tracking: use bbox center as position
-                    const centerX = pred.bbox[0] + pred.bbox[2] / 2;
-                    const centerY = pred.bbox[1] + pred.bbox[3] / 2;
-                    const position = { x: centerX, y: centerY, timestamp: Date.now() };
-                    
-                    // Assign or create track
-                    let trackId = findClosestTrack(centerX, centerY);
-                    if (trackId === null) {
-                        trackId = nextId++;
-                        vehicleTracks[trackId] = { positions: [], speeds: [], distances: [] };
-                    }
-                    
-                    const track = vehicleTracks[trackId];
-                    track.positions.push(position);
-                    track.distances.push(estimatedDistance);
-                    
-                    // Keep last 60 frames (2 seconds at 30fps) for speed calc
-                    if (track.positions.length > 60) {
-                        track.positions.shift();
-                        track.distances.shift();
-                    }
-                    
-                    // Estimate speed (pixels per frame, then convert to m/s)
-                    if (track.positions.length >= 2) {
-                        const prevPos = track.positions[track.positions.length - 2];
-                        const dx = centerX - prevPos.x;
-                        const dy = centerY - prevPos.y;
-                        const pixelSpeed = Math.sqrt(dx*dx + dy*dy) / FPS; // pixels per second
+            try {
+                const predictions = await model.detect(video);
+                ctx.clearRect(0, 0, canvas.width, canvas.height);
+                
+                let currentDetections = [];
+                
+                predictions.forEach(pred => {
+                    if (vehicleClasses.includes(pred.class)) {
+                        ctx.strokeStyle = '#00ff00';
+                        ctx.lineWidth = 2;
+                        ctx.strokeRect(pred.bbox[0], pred.bbox[1], pred.bbox[2], pred.bbox[3]);
+                        ctx.fillStyle = '#00ff00';
+                        ctx.font = '16px Arial';
+                        ctx.fillText(`${pred.class} ${Math.round(pred.score * 100)}%`, pred.bbox[0], pred.bbox[1] - 5);
                         
-                        // Rough conversion: assume 1 pixel ~ 0.01m at avg distance (simplified)
-                        const pixelToMeter = 0.01 * (estimatedDistance / 10); // Scale by distance
-                        const estimatedSpeed = pixelSpeed * pixelToMeter; // m/s
+                        const bboxWidth = pred.bbox[2];
+                        const estimatedDistance = (AVERAGE_VEHICLE_WIDTH * ASSUMED_FOCAL_LENGTH) / bboxWidth;
                         
-                        track.speeds.push(estimatedSpeed);
-                        if (track.speeds.length > 60) track.speeds.shift();
+                        const centerX = pred.bbox[0] + pred.bbox[2] / 2;
+                        const centerY = pred.bbox[1] + pred.bbox[3] / 2;
+                        const position = { x: centerX, y: centerY, timestamp: Date.now() };
                         
-                        // Average speed
-                        const avgSpeed = track.speeds.reduce((a, b) => a + b, 0) / track.speeds.length;
-                        
-                        // Relative speed (assume user moving forward, y decreasing is approaching)
-                        const relativeSpeed = avgSpeed - USER_SPEED; // Simplified: positive if approaching
-                        
-                        // Time to collision (if approaching)
-                        let ttc = Infinity;
-                        let dangerLevel = 'low';
-                        if (relativeSpeed > 0 && estimatedDistance > 0) {
-                            ttc = estimatedDistance / relativeSpeed;
-                            if (ttc < 2) dangerLevel = 'high';
-                            else if (ttc < 5) dangerLevel = 'medium';
+                        let trackId = findClosestTrack(centerX, centerY);
+                        if (trackId === null) {
+                            trackId = nextId++;
+                            vehicleTracks[trackId] = { positions: [], speeds: [], distances: [] };
                         }
                         
-                        // Draw speed and danger
-                        ctx.fillStyle = dangerLevel === 'high' ? '#ff0000' : dangerLevel === 'medium' ? '#ffff00' : '#00ff00';
-                        ctx.fillText(`Speed: ${Math.round(avgSpeed * 3.6)} km/h | Dist: ${Math.round(estimatedDistance)}m | TTC: ${ttc.toFixed(1)}s | Danger: ${dangerLevel}`, pred.bbox[0], pred.bbox[1] + pred.bbox[3] + 20);
+                        const track = vehicleTracks[trackId];
+                        track.positions.push(position);
+                        track.distances.push(estimatedDistance);
                         
-                        currentDetections.push({
-                            id: trackId,
-                            class: pred.class,
-                            speed: Math.round(avgSpeed * 3.6),
-                            distance: Math.round(estimatedDistance),
-                            ttc: ttc.toFixed(1),
-                            danger: dangerLevel
-                        });
-                    } else {
-                        currentDetections.push({
-                            id: trackId,
-                            class: pred.class,
-                            speed: 0,
-                            distance: Math.round(estimatedDistance),
-                            ttc: 'N/A',
-                            danger: 'low'
-                        });
+                        if (track.positions.length > 60) {
+                            track.positions.shift();
+                            track.distances.shift();
+                        }
+                        
+                        if (track.positions.length >= 2) {
+                            const prevPos = track.positions[track.positions.length - 2];
+                            const dx = centerX - prevPos.x;
+                            const dy = centerY - prevPos.y;
+                            const pixelSpeed = Math.sqrt(dx*dx + dy*dy) / FPS;
+                            const pixelToMeter = 0.01 * (estimatedDistance / 10);
+                            const estimatedSpeed = pixelSpeed * pixelToMeter;
+                            
+                            track.speeds.push(estimatedSpeed);
+                            if (track.speeds.length > 60) track.speeds.shift();
+                            
+                            const avgSpeed = track.speeds.reduce((a, b) => a + b, 0) / track.speeds.length;
+                            const relativeSpeed = avgSpeed - USER_SPEED;
+                            
+                            let ttc = Infinity;
+                            let dangerLevel = 'low';
+                            if (relativeSpeed > 0 && estimatedDistance > 0) {
+                                ttc = estimatedDistance / relativeSpeed;
+                                if (ttc < 2) dangerLevel = 'high';
+                                else if (ttc < 5) dangerLevel = 'medium';
+                            }
+                            
+                            ctx.fillStyle = dangerLevel === 'high' ? '#ff0000' : dangerLevel === 'medium' ? '#ffff00' : '#00ff00';
+                            ctx.fillText(`Speed: ${Math.round(avgSpeed * 3.6)} km/h | Dist: ${Math.round(estimatedDistance)}m | TTC: ${ttc.toFixed(1)}s | Danger: ${dangerLevel}`, pred.bbox[0], pred.bbox[1] + pred.bbox[3] + 20);
+                            
+                            currentDetections.push({
+                                id: trackId,
+                                class: pred.class,
+                                speed: Math.round(avgSpeed * 3.6),
+                                distance: Math.round(estimatedDistance),
+                                ttc: ttc.toFixed(1),
+                                danger: dangerLevel
+                            });
+                        } else {
+                            currentDetections.push({
+                                id: trackId,
+                                class: pred.class,
+                                speed: 0,
+                                distance: Math.round(estimatedDistance),
+                                ttc: 'N/A',
+                                danger: 'low'
+                            });
+                        }
                     }
-                }
-            });
-            
-            // Update UI with current detections
-            updateDetectionsUI(currentDetections);
-            
-            // Clean up old tracks (if no detection for 2 seconds)
-            Object.keys(vehicleTracks).forEach(id => {
-                if (Date.now() - vehicleTracks[id].positions[vehicleTracks[id].positions.length - 1].timestamp > 2000) {
-                    delete vehicleTracks[id];
-                }
-            });
-            
-            requestAnimationFrame(detectFrame);
+                });
+                
+                updateDetectionsUI(currentDetections);
+                
+                Object.keys(vehicleTracks).forEach(id => {
+                    if (Date.now() - vehicleTracks[id].positions[vehicleTracks[id].positions.length - 1].timestamp > 2000) {
+                        delete vehicleTracks[id];
+                    }
+                });
+                
+                requestAnimationFrame(detectFrame);
+            } catch (err) {
+                showError('Detection error: ' + err.message);
+            }
         }
         
         function findClosestTrack(x, y, threshold = 50) {
@@ -283,13 +325,24 @@
             ).join('');
         }
         
-        // Event listeners
         startBtn.addEventListener('click', async () => {
-            await initModel();
-            await setupCamera();
+            errorDiv.style.display = 'none';
+            if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
+                showError('Camera API not supported by this browser');
+                return;
+            }
+            if (location.protocol !== 'https:' && location.hostname !== 'localhost') {
+                showError('Camera access requires HTTPS or localhost');
+                return;
+            }
             startBtn.disabled = true;
-            stopBtn.disabled = false;
-            setTimeout(startDetection, 1000); // Delay to stabilize video
+            await initModel();
+            if (await setupCamera()) {
+                stopBtn.disabled = false;
+                setTimeout(startDetection, 1000);
+            } else {
+                startBtn.disabled = false;
+            }
         });
         
         stopBtn.addEventListener('click', stopDetection);
