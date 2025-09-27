@@ -3,349 +3,2132 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Vehicle Collision Predictor</title>
+    <title>UPSC AI Mentor</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@300;400;500;600;700&family=Public+Sans:wght@300;400;500;600&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <style>
-        body {
-            font-family: Arial, sans-serif;
+        :root {
+            /* Colors */
+            --primary-color: #3730a3;
+            --secondary-color: #f59e0b;
+            --background: #fafafa;
+            --surface: #ffffff;
+            --surface-hover: #f8fafc;
+            --text-primary: #1e293b;
+            --text-secondary: #64748b;
+            --border-color: #e2e8f0;
+            --shadow: 0 1px 3px 0 rgb(0 0 0 / 0.1), 0 1px 2px -1px rgb(0 0 0 / 0.1);
+            --shadow-lg: 0 10px 15px -3px rgb(0 0 0 / 0.1), 0 4px 6px -4px rgb(0 0 0 / 0.1);
+            --shadow-xl: 0 20px 25px -5px rgb(0 0 0 / 0.1), 0 8px 10px -6px rgb(0 0 0 / 0.1);
+            
+            /* Typography */
+            --font-heading: 'Space Grotesk', -apple-system, BlinkMacSystemFont, sans-serif;
+            --font-body: 'Public Sans', -apple-system, BlinkMacSystemFont, sans-serif;
+            
+            /* Spacing */
+            --spacing-xs: 0.25rem;
+            --spacing-sm: 0.5rem;
+            --spacing-md: 1rem;
+            --spacing-lg: 1.5rem;
+            --spacing-xl: 2rem;
+            --spacing-2xl: 3rem;
+            
+            /* Border radius */
+            --radius-sm: 0.375rem;
+            --radius-md: 0.5rem;
+            --radius-lg: 0.75rem;
+            --radius-xl: 1rem;
+            
+            /* Transitions */
+            --transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+            --transition-fast: all 0.15s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+
+        [data-theme="dark"] {
+            --background: #0f172a;
+            --surface: #1e293b;
+            --surface-hover: #334155;
+            --text-primary: #f1f5f9;
+            --text-secondary: #94a3b8;
+            --border-color: #334155;
+        }
+
+        * {
             margin: 0;
-            padding: 20px;
-            background-color: #f0f0f0;
-            display: flex;
-            flex-direction: column;
-            align-items: center;
+            padding: 0;
+            box-sizing: border-box;
         }
-        #container {
+
+        body {
+            font-family: var(--font-body);
+            background-color: var(--background);
+            color: var(--text-primary);
+            line-height: 1.6;
+            overflow-x: hidden;
+        }
+
+        .app-container {
+            display: grid;
+            grid-template-columns: 280px 1fr;
+            min-height: 100vh;
+            transition: var(--transition);
+        }
+
+        .app-container.sidebar-collapsed {
+            grid-template-columns: 70px 1fr;
+        }
+
+        /* Sidebar Styles */
+        .sidebar {
+            background: var(--surface);
+            border-right: 1px solid var(--border-color);
+            padding: var(--spacing-lg);
             position: relative;
-            width: 100%;
-            max-width: 640px;
+            transition: var(--transition);
+            box-shadow: var(--shadow);
         }
-        #video {
-            width: 100%;
-            height: auto;
-            border: 2px solid #333;
+
+        .sidebar-header {
+            display: flex;
+            align-items: center;
+            gap: var(--spacing-md);
+            margin-bottom: var(--spacing-2xl);
         }
-        #canvas {
-            position: absolute;
-            top: 0;
-            left: 0;
-            width: 100%;
-            height: 100%;
-            pointer-events: none;
+
+        .logo {
+            width: 40px;
+            height: 40px;
+            background: linear-gradient(135deg, var(--primary-color), var(--secondary-color));
+            border-radius: var(--radius-lg);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: white;
+            font-size: 1.5rem;
         }
-        #controls {
-            margin-top: 20px;
+
+        .logo-text {
+            font-family: var(--font-heading);
+            font-weight: 700;
+            font-size: 1.25rem;
+            transition: var(--transition);
+        }
+
+        .sidebar-collapsed .logo-text {
+            opacity: 0;
+            width: 0;
+            overflow: hidden;
+        }
+
+        .nav-menu {
+            list-style: none;
+        }
+
+        .nav-item {
+            margin-bottom: var(--spacing-sm);
+        }
+
+        .nav-link {
+            display: flex;
+            align-items: center;
+            gap: var(--spacing-md);
+            padding: var(--spacing-md) var(--spacing-lg);
+            color: var(--text-secondary);
+            text-decoration: none;
+            border-radius: var(--radius-md);
+            transition: var(--transition);
+            position: relative;
+        }
+
+        .nav-link:hover {
+            background-color: var(--surface-hover);
+            color: var(--primary-color);
+        }
+
+        .nav-link.active {
+            background-color: var(--primary-color);
+            color: white;
+        }
+
+        .nav-link i {
+            width: 20px;
             text-align: center;
         }
-        button {
-            padding: 10px 20px;
-            margin: 5px;
-            background-color: #007bff;
+
+        .nav-text {
+            transition: var(--transition);
+        }
+
+        .sidebar-collapsed .nav-text {
+            opacity: 0;
+            width: 0;
+            overflow: hidden;
+        }
+
+        .sidebar-toggle {
+            position: absolute;
+            top: var(--spacing-lg);
+            right: -15px;
+            width: 30px;
+            height: 30px;
+            background: var(--surface);
+            border: 1px solid var(--border-color);
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            box-shadow: var(--shadow);
+            color: var(--text-secondary);
+            transition: var(--transition);
+        }
+
+        .sidebar-toggle:hover {
+            color: var(--primary-color);
+            border-color: var(--primary-color);
+        }
+
+        /* Main Content */
+        .main-content {
+            flex: 1;
+            padding: var(--spacing-xl);
+            overflow-y: auto;
+        }
+
+        .page-section {
+            display: none;
+            animation: fadeInUp 0.5s ease-out;
+        }
+
+        .page-section.active {
+            display: block;
+        }
+
+        @keyframes fadeInUp {
+            from {
+                opacity: 0;
+                transform: translateY(20px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        .page-header {
+            margin-bottom: var(--spacing-2xl);
+        }
+
+        .page-title {
+            font-family: var(--font-heading);
+            font-size: 2.25rem;
+            font-weight: 700;
+            color: var(--text-primary);
+            margin-bottom: var(--spacing-sm);
+        }
+
+        .page-subtitle {
+            color: var(--text-secondary);
+            font-size: 1.125rem;
+        }
+
+        /* Card Components */
+        .card {
+            background: var(--surface);
+            border-radius: var(--radius-xl);
+            padding: var(--spacing-xl);
+            box-shadow: var(--shadow);
+            border: 1px solid var(--border-color);
+            transition: var(--transition);
+        }
+
+        .card:hover {
+            box-shadow: var(--shadow-lg);
+        }
+
+        .card-header {
+            display: flex;
+            align-items: center;
+            justify-content: between;
+            gap: var(--spacing-md);
+            margin-bottom: var(--spacing-lg);
+        }
+
+        .card-title {
+            font-family: var(--font-heading);
+            font-size: 1.25rem;
+            font-weight: 600;
+            color: var(--text-primary);
+        }
+
+        .card-icon {
+            width: 48px;
+            height: 48px;
+            border-radius: var(--radius-lg);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 1.5rem;
+            color: white;
+        }
+
+        /* Dashboard Grid */
+        .dashboard-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+            gap: var(--spacing-xl);
+            margin-bottom: var(--spacing-2xl);
+        }
+
+        .stats-card {
+            background: linear-gradient(135deg, var(--primary-color), #4338ca);
             color: white;
             border: none;
-            border-radius: 5px;
+        }
+
+        .stats-number {
+            font-size: 2.5rem;
+            font-weight: 700;
+            margin-bottom: var(--spacing-sm);
+        }
+
+        .stats-label {
+            opacity: 0.9;
+        }
+
+        .quick-actions {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: var(--spacing-lg);
+            margin-top: var(--spacing-xl);
+        }
+
+        /* Buttons */
+        .btn {
+            display: inline-flex;
+            align-items: center;
+            gap: var(--spacing-sm);
+            padding: var(--spacing-md) var(--spacing-xl);
+            font-size: 1rem;
+            font-weight: 500;
+            border-radius: var(--radius-md);
+            border: none;
             cursor: pointer;
+            transition: var(--transition);
+            text-decoration: none;
+            justify-content: center;
         }
-        button:hover {
-            background-color: #0056b3;
+
+        .btn-primary {
+            background: var(--primary-color);
+            color: white;
         }
-        button:disabled {
-            background-color: #ccc;
-            cursor: not-allowed;
+
+        .btn-primary:hover {
+            background: #312e81;
+            transform: translateY(-1px);
+            box-shadow: var(--shadow-lg);
         }
-        #info {
-            margin-top: 20px;
-            padding: 10px;
-            background-color: white;
-            border-radius: 5px;
-            box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+
+        .btn-secondary {
+            background: var(--surface);
+            color: var(--text-primary);
+            border: 1px solid var(--border-color);
+        }
+
+        .btn-secondary:hover {
+            background: var(--surface-hover);
+            border-color: var(--primary-color);
+        }
+
+        .btn-accent {
+            background: var(--secondary-color);
+            color: white;
+        }
+
+        .btn-accent:hover {
+            background: #d97706;
+        }
+
+        /* Forms */
+        .form-group {
+            margin-bottom: var(--spacing-lg);
+        }
+
+        .form-label {
+            display: block;
+            margin-bottom: var(--spacing-sm);
+            font-weight: 500;
+            color: var(--text-primary);
+        }
+
+        .form-input, .form-textarea, .form-select {
             width: 100%;
-            max-width: 640px;
+            padding: var(--spacing-md);
+            border: 1px solid var(--border-color);
+            border-radius: var(--radius-md);
+            font-size: 1rem;
+            background: var(--surface);
+            color: var(--text-primary);
+            transition: var(--transition);
         }
-        #error {
-            color: red;
-            margin-top: 10px;
-            display: none;
+
+        .form-input:focus, .form-textarea:focus, .form-select:focus {
+            outline: none;
+            border-color: var(--primary-color);
+            box-shadow: 0 0 0 3px rgb(55 48 163 / 0.1);
         }
-        .detection {
-            margin: 10px 0;
-            padding: 10px;
-            border-left: 4px solid #007bff;
-            background-color: #f9f9f9;
+
+        .form-textarea {
+            min-height: 120px;
+            resize: vertical;
         }
-        .danger-high { border-left-color: #dc3545; }
-        .danger-medium { border-left-color: #ffc107; }
-        .danger-low { border-left-color: #28a745; }
+
+        /* Modal */
+        .modal-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: rgba(0, 0, 0, 0.5);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            z-index: 1000;
+            opacity: 0;
+            visibility: hidden;
+            transition: var(--transition);
+        }
+
+        .modal-overlay.active {
+            opacity: 1;
+            visibility: visible;
+        }
+
+        .modal {
+            background: var(--surface);
+            border-radius: var(--radius-xl);
+            padding: var(--spacing-2xl);
+            max-width: 600px;
+            width: 90%;
+            max-height: 80vh;
+            overflow-y: auto;
+            box-shadow: var(--shadow-xl);
+            transform: scale(0.9) translateY(20px);
+            transition: var(--transition);
+        }
+
+        .modal-overlay.active .modal {
+            transform: scale(1) translateY(0);
+        }
+
+        .modal-header {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            margin-bottom: var(--spacing-xl);
+        }
+
+        .modal-title {
+            font-family: var(--font-heading);
+            font-size: 1.5rem;
+            font-weight: 600;
+        }
+
+        .modal-close {
+            width: 40px;
+            height: 40px;
+            border: none;
+            background: none;
+            cursor: pointer;
+            color: var(--text-secondary);
+            border-radius: var(--radius-md);
+            transition: var(--transition);
+        }
+
+        .modal-close:hover {
+            background: var(--surface-hover);
+            color: var(--text-primary);
+        }
+
+        /* Floating Action Button */
+        .fab {
+            position: fixed;
+            bottom: 2rem;
+            right: 2rem;
+            width: 60px;
+            height: 60px;
+            background: var(--primary-color);
+            color: white;
+            border: none;
+            border-radius: 50%;
+            font-size: 1.5rem;
+            cursor: pointer;
+            box-shadow: var(--shadow-xl);
+            transition: var(--transition);
+            z-index: 100;
+        }
+
+        .fab:hover {
+            background: #312e81;
+            transform: scale(1.1);
+        }
+
+        /* Chat Interface */
+        .chat-container {
+            display: flex;
+            flex-direction: column;
+            height: 500px;
+            border: 1px solid var(--border-color);
+            border-radius: var(--radius-lg);
+            overflow: hidden;
+        }
+
+        .chat-messages {
+            flex: 1;
+            padding: var(--spacing-lg);
+            overflow-y: auto;
+            background: var(--background);
+        }
+
+        .chat-message {
+            margin-bottom: var(--spacing-lg);
+            display: flex;
+            gap: var(--spacing-md);
+        }
+
+        .chat-message.user {
+            flex-direction: row-reverse;
+        }
+
+        .chat-avatar {
+            width: 40px;
+            height: 40px;
+            border-radius: 50%;
+            background: var(--primary-color);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: white;
+            flex-shrink: 0;
+        }
+
+        .chat-bubble {
+            max-width: 70%;
+            padding: var(--spacing-md);
+            border-radius: var(--radius-lg);
+            background: var(--surface);
+            border: 1px solid var(--border-color);
+        }
+
+        .chat-message.user .chat-bubble {
+            background: var(--primary-color);
+            color: white;
+        }
+
+        .chat-input-area {
+            padding: var(--spacing-lg);
+            border-top: 1px solid var(--border-color);
+            background: var(--surface);
+        }
+
+        .chat-input-container {
+            display: flex;
+            gap: var(--spacing-md);
+        }
+
+        .chat-input {
+            flex: 1;
+            padding: var(--spacing-md);
+            border: 1px solid var(--border-color);
+            border-radius: var(--radius-md);
+        }
+
+        /* Progress Bar */
+        .progress-bar {
+            width: 100%;
+            height: 8px;
+            background: var(--border-color);
+            border-radius: 4px;
+            overflow: hidden;
+            margin-bottom: var(--spacing-md);
+        }
+
+        .progress-fill {
+            height: 100%;
+            background: linear-gradient(90deg, var(--primary-color), var(--secondary-color));
+            transition: width 0.5s ease;
+        }
+
+        /* Theme Toggle */
+        .theme-toggle {
+            position: fixed;
+            top: 2rem;
+            right: 2rem;
+            width: 50px;
+            height: 50px;
+            background: var(--surface);
+            border: 1px solid var(--border-color);
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            box-shadow: var(--shadow);
+            transition: var(--transition);
+            z-index: 100;
+        }
+
+        .theme-toggle:hover {
+            box-shadow: var(--shadow-lg);
+            border-color: var(--primary-color);
+        }
+
+        /* Responsive Design */
+        @media (max-width: 768px) {
+            .app-container {
+                grid-template-columns: 1fr;
+            }
+
+            .sidebar {
+                position: fixed;
+                top: 0;
+                left: -280px;
+                width: 280px;
+                height: 100vh;
+                z-index: 1000;
+                transition: left 0.3s ease;
+            }
+
+            .sidebar.mobile-open {
+                left: 0;
+            }
+
+            .main-content {
+                padding: var(--spacing-md);
+            }
+
+            .page-title {
+                font-size: 1.875rem;
+            }
+
+            .dashboard-grid {
+                grid-template-columns: 1fr;
+                gap: var(--spacing-lg);
+            }
+
+            .quick-actions {
+                grid-template-columns: 1fr;
+            }
+        }
+
+        /* Loading Spinner */
+        .loading-spinner {
+            display: inline-block;
+            width: 20px;
+            height: 20px;
+            border: 2px solid var(--border-color);
+            border-radius: 50%;
+            border-top-color: var(--primary-color);
+            animation: spin 1s ease-in-out infinite;
+        }
+
+        @keyframes spin {
+            to { transform: rotate(360deg); }
+        }
+
+        /* Utility Classes */
+        .text-center { text-align: center; }
+        .text-right { text-align: right; }
+        .mb-0 { margin-bottom: 0; }
+        .mb-sm { margin-bottom: var(--spacing-sm); }
+        .mb-md { margin-bottom: var(--spacing-md); }
+        .mb-lg { margin-bottom: var(--spacing-lg); }
+        .mt-lg { margin-top: var(--spacing-lg); }
+        .hidden { display: none; }
+        .flex { display: flex; }
+        .items-center { align-items: center; }
+        .justify-between { justify-content: space-between; }
+        .gap-md { gap: var(--spacing-md); }
     </style>
-    <!-- TensorFlow.js and COCO-SSD model -->
-    <script src="https://cdn.jsdelivr.net/npm/@tensorflow/tfjs@latest/dist/tf.min.js"></script>
-    <script src="https://cdn.jsdelivr.net/npm/@tensorflow-models/coco-ssd@latest"></script>
 </head>
 <body>
-    <h1>Vehicle Collision Predictor</h1>
-    <p>Point your phone camera at the road. This app detects vehicles, estimates distances/speeds, and predicts collision risk.</p>
-    
-    <div id="container">
-        <video id="video" autoplay muted playsinline></video>
-        <canvas id="canvas"></canvas>
+    <div class="app-container" id="appContainer">
+        <!-- Sidebar -->
+        <nav class="sidebar" id="sidebar">
+            <div class="sidebar-header">
+                <div class="logo">
+                    <i class="fas fa-graduation-cap"></i>
+                </div>
+                <span class="logo-text">UPSC AI</span>
+            </div>
+            
+            <ul class="nav-menu">
+                <li class="nav-item">
+                    <a href="#" class="nav-link active" data-page="dashboard">
+                        <i class="fas fa-home"></i>
+                        <span class="nav-text">Dashboard</span>
+                    </a>
+                </li>
+                <li class="nav-item">
+                    <a href="#" class="nav-link" data-page="current-affairs">
+                        <i class="fas fa-newspaper"></i>
+                        <span class="nav-text">Current Affairs</span>
+                    </a>
+                </li>
+                <li class="nav-item">
+                    <a href="#" class="nav-link" data-page="mcq-solver">
+                        <i class="fas fa-question-circle"></i>
+                        <span class="nav-text">MCQ Solver</span>
+                    </a>
+                </li>
+                <li class="nav-item">
+                    <a href="#" class="nav-link" data-page="answer-reviewer">
+                        <i class="fas fa-edit"></i>
+                        <span class="nav-text">Answer Review</span>
+                    </a>
+                </li>
+                <li class="nav-item">
+                    <a href="#" class="nav-link" data-page="mentor">
+                        <i class="fas fa-robot"></i>
+                        <span class="nav-text">AI Mentor</span>
+                    </a>
+                </li>
+                <li class="nav-item">
+                    <a href="#" class="nav-link" data-page="scheduler">
+                        <i class="fas fa-calendar-alt"></i>
+                        <span class="nav-text">Study Planner</span>
+                    </a>
+                </li>
+                <li class="nav-item">
+                    <a href="#" class="nav-link" data-page="notifications">
+                        <i class="fas fa-bell"></i>
+                        <span class="nav-text">Notifications</span>
+                    </a>
+                </li>
+                <li class="nav-item">
+                    <a href="#" class="nav-link" data-page="settings">
+                        <i class="fas fa-cog"></i>
+                        <span class="nav-text">Settings</span>
+                    </a>
+                </li>
+            </ul>
+            
+            <button class="sidebar-toggle" id="sidebarToggle">
+                <i class="fas fa-chevron-left"></i>
+            </button>
+        </nav>
+
+        <!-- Main Content -->
+        <main class="main-content">
+            <!-- Dashboard Page -->
+            <section class="page-section active" id="dashboard">
+                <div class="page-header">
+                    <h1 class="page-title">Dashboard</h1>
+                    <p class="page-subtitle">Your UPSC preparation at a glance</p>
+                </div>
+
+                <div class="dashboard-grid">
+                    <div class="card stats-card">
+                        <div class="stats-number">12</div>
+                        <div class="stats-label">Study Days Streak</div>
+                    </div>
+                    <div class="card stats-card">
+                        <div class="stats-number">85%</div>
+                        <div class="stats-label">Weekly Progress</div>
+                    </div>
+                    <div class="card stats-card">
+                        <div class="stats-number">142</div>
+                        <div class="stats-label">MCQs Solved</div>
+                    </div>
+                </div>
+
+                <div class="dashboard-grid">
+                    <div class="card">
+                        <div class="card-header">
+                            <div class="card-icon" style="background: linear-gradient(135deg, #10b981, #059669);">
+                                <i class="fas fa-calendar-check"></i>
+                            </div>
+                            <h3 class="card-title">Today's Plan</h3>
+                        </div>
+                        <p class="mb-md">Current Affairs Revision</p>
+                        <p class="mb-md">Polity Practice Questions</p>
+                        <p class="mb-md">Essay Writing - 1 Hour</p>
+                        <div class="progress-bar">
+                            <div class="progress-fill" style="width: 65%"></div>
+                        </div>
+                        <small class="text-secondary">65% Complete</small>
+                    </div>
+
+                    <div class="card">
+                        <div class="card-header">
+                            <div class="card-icon" style="background: linear-gradient(135deg, #f59e0b, #d97706);">
+                                <i class="fas fa-newspaper"></i>
+                            </div>
+                            <h3 class="card-title">Latest Briefing</h3>
+                        </div>
+                        <p class="mb-md"><strong>Economic Survey Highlights</strong></p>
+                        <p class="mb-md">Key points on GDP growth, inflation trends, and fiscal policy changes...</p>
+                        <button class="btn btn-secondary">Read Full Summary</button>
+                    </div>
+                </div>
+
+                <div class="quick-actions">
+                    <button class="btn btn-primary" onclick="showModal('mentorModal')">
+                        <i class="fas fa-robot"></i>
+                        Ask AI Mentor
+                    </button>
+                    <button class="btn btn-accent" onclick="showPage('mcq-solver')">
+                        <i class="fas fa-question"></i>
+                        New MCQ Practice
+                    </button>
+                    <button class="btn btn-secondary" onclick="showPage('current-affairs')">
+                        <i class="fas fa-newspaper"></i>
+                        Current Affairs
+                    </button>
+                    <button class="btn btn-secondary" onclick="showPage('answer-reviewer')">
+                        <i class="fas fa-edit"></i>
+                        Review Answer
+                    </button>
+                </div>
+            </section>
+
+            <!-- Current Affairs Page -->
+            <section class="page-section" id="current-affairs">
+                <div class="page-header">
+                    <h1 class="page-title">AI Current Affairs</h1>
+                    <p class="page-subtitle">Smart summarization for UPSC preparation</p>
+                </div>
+
+                <div class="card">
+                    <div class="form-group">
+                        <label class="form-label">Article URL or Content</label>
+                        <textarea class="form-textarea" id="articleInput" placeholder="Paste article content or URL here..." rows="8"></textarea>
+                    </div>
+                    
+                    <div class="flex gap-md mb-lg">
+                        <button class="btn btn-primary" onclick="summarizeArticle()">
+                            <i class="fas fa-magic"></i>
+                            Summarize for UPSC
+                        </button>
+                        <button class="btn btn-secondary" onclick="generateMCQs()">
+                            <i class="fas fa-question-circle"></i>
+                            Generate MCQs
+                        </button>
+                    </div>
+
+                    <div id="summaryResults" class="hidden">
+                        <h3 class="mb-md">Summary Results</h3>
+                        <div class="card" style="background: var(--background); margin-bottom: var(--spacing-lg);">
+                            <h4 class="mb-sm">Prelims Flash Summary</h4>
+                            <div id="prelimsSummary" class="mb-lg"></div>
+                            
+                            <h4 class="mb-sm">Mains Issue Brief</h4>
+                            <div id="mainsSummary" class="mb-lg"></div>
+                            
+                            <h4 class="mb-sm">Potential MCQs</h4>
+                            <div id="generatedMCQs"></div>
+                        </div>
+                        
+                        <div class="flex gap-md">
+                            <button class="btn btn-accent">Create Flashcard</button>
+                            <button class="btn btn-secondary">Save to Notes</button>
+                        </div>
+                    </div>
+                </div>
+            </section>
+
+            <!-- MCQ Solver Page -->
+            <section class="page-section" id="mcq-solver">
+                <div class="page-header">
+                    <h1 class="page-title">AI MCQ Solver</h1>
+                    <p class="page-subtitle">Detailed reasoning and analysis</p>
+                </div>
+
+                <div class="card">
+                    <div class="form-group">
+                        <label class="form-label">MCQ Question</label>
+                        <textarea class="form-textarea" id="mcqQuestion" placeholder="Enter the MCQ stem and options here..." rows="6"></textarea>
+                    </div>
+                    
+                    <div class="form-group">
+                        <label class="form-label">Correct Answer (Optional)</label>
+                        <select class="form-select" id="correctAnswer">
+                            <option value="">Select if known</option>
+                            <option value="A">A</option>
+                            <option value="B">B</option>
+                            <option value="C">C</option>
+                            <option value="D">D</option>
+                        </select>
+                    </div>
+                    
+                    <button class="btn btn-primary" onclick="solveMCQ()">
+                        <i class="fas fa-brain"></i>
+                        Analyze MCQ
+                    </button>
+
+                    <div id="mcqAnalysis" class="hidden mt-lg">
+                        <div class="card" style="background: var(--background);">
+                            <h3 class="mb-md">Analysis Results</h3>
+                            <div id="mcqSolution"></div>
+                        </div>
+                    </div>
+                </div>
+            </section>
+
+            <!-- Answer Reviewer Page -->
+            <section class="page-section" id="answer-reviewer">
+                <div class="page-header">
+                    <h1 class="page-title">Mains Answer Reviewer</h1>
+                    <p class="page-subtitle">Enhance your answer writing skills</p>
+                </div>
+
+                <div class="card">
+                    <div class="form-group">
+                        <label class="form-label">Question</label>
+                        <textarea class="form-textarea" id="mainQuestion" placeholder="Enter the mains question..." rows="3"></textarea>
+                    </div>
+                    
+                    <div class="form-group">
+                        <label class="form-label">Your Answer</label>
+                        <textarea class="form-textarea" id="studentAnswer" placeholder="Paste your answer here..." rows="10"></textarea>
+                    </div>
+                    
+                    <div class="flex gap-md mb-lg">
+                        <div class="form-group" style="flex: 1;">
+                            <label class="form-label">Target Word Count</label>
+                            <select class="form-select" id="targetWords">
+                                <option value="150">150 words</option>
+                                <option value="250" selected>250 words</option>
+                                <option value="400">400 words</option>
+                            </select>
+                        </div>
+                        <div class="form-group" style="flex: 1;">
+                            <label class="form-label">Writing Tone</label>
+                            <select class="form-select" id="writingTone">
+                                <option value="neutral" selected>Neutral</option>
+                                <option value="assertive">Assertive</option>
+                                <option value="diplomatic">Diplomatic</option>
+                            </select>
+                        </div>
+                    </div>
+                    
+                    <button class="btn btn-primary" onclick="reviewAnswer()">
+                        <i class="fas fa-search"></i>
+                        Review & Enhance
+                    </button>
+
+                    <div id="answerReview" class="hidden mt-lg">
+                        <div class="card" style="background: var(--background);">
+                            <h3 class="mb-md">Review Results</h3>
+                            <div id="reviewFeedback"></div>
+                        </div>
+                    </div>
+                </div>
+            </section>
+
+            <!-- AI Mentor Page -->
+            <section class="page-section" id="mentor">
+                <div class="page-header">
+                    <h1 class="page-title">AI Mentor</h1>
+                    <p class="page-subtitle">Your personal UPSC guidance assistant</p>
+                </div>
+
+                <div class="card">
+                    <div class="form-group">
+                        <label class="form-label">Mentor Mode</label>
+                        <select class="form-select" id="mentorMode">
+                            <option value="study">Study Mentor</option>
+                            <option value="strategy">Strategy Planner</option>
+                            <option value="doubt">Doubt Resolver</option>
+                        </select>
+                    </div>
+
+                    <div class="chat-container">
+                        <div class="chat-messages" id="chatMessages">
+                            <div class="chat-message">
+                                <div class="chat-avatar">
+                                    <i class="fas fa-robot"></i>
+                                </div>
+                                <div class="chat-bubble">
+                                    <p>Hello! I'm your AI Mentor. How can I help you with your UPSC preparation today?</p>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <div class="chat-input-area">
+                            <div class="chat-input-container">
+                                <input type="text" class="chat-input" id="chatInput" placeholder="Ask your mentor anything...">
+                                <button class="btn btn-primary" onclick="sendMessage()">
+                                    <i class="fas fa-paper-plane"></i>
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </section>
+
+            <!-- Study Scheduler Page -->
+            <section class="page-section" id="scheduler">
+                <div class="page-header">
+                    <h1 class="page-title">Study Scheduler</h1>
+                    <p class="page-subtitle">Plan your preparation journey</p>
+                </div>
+
+                <div class="dashboard-grid">
+                    <div class="card">
+                        <h3 class="card-title mb-lg">Quick Schedule</h3>
+                        <div class="form-group">
+                            <label class="form-label">Available Hours/Day</label>
+                            <select class="form-select" id="studyHours">
+                                <option value="4">4 hours</option>
+                                <option value="6">6 hours</option>
+                                <option value="8" selected>8 hours</option>
+                                <option value="10">10 hours</option>
+                            </select>
+                        </div>
+                        
+                        <div class="form-group">
+                            <label class="form-label">Exam Date</label>
+                            <input type="date" class="form-input" id="examDate">
+                        </div>
+                        
+                        <button class="btn btn-primary" onclick="generateSchedule()">
+                            <i class="fas fa-calendar-plus"></i>
+                            Generate Schedule
+                        </button>
+                    </div>
+
+                    <div class="card">
+                        <h3 class="card-title mb-lg">This Week's Plan</h3>
+                        <div id="weeklySchedule">
+                            <div class="mb-md">
+                                <strong>Monday:</strong> Polity (2h), Current Affairs (1h), MCQ Practice (1h)
+                            </div>
+                            <div class="mb-md">
+                                <strong>Tuesday:</strong> History (2h), Geography (1h), Answer Writing (1h)
+                            </div>
+                            <div class="mb-md">
+                                <strong>Wednesday:</strong> Economy (2h), Environment (1h), Revision (1h)
+                            </div>
+                            <div class="mb-md">
+                                <strong>Thursday:</strong> Science & Tech (2h), Ethics (1h), MCQ Practice (1h)
+                            </div>
+                            <div class="mb-md">
+                                <strong>Friday:</strong> International Relations (2h), Art & Culture (1h), Writing (1h)
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </section>
+
+            <!-- Notifications Page -->
+            <section class="page-section" id="notifications">
+                <div class="page-header">
+                    <h1 class="page-title">Notifications</h1>
+                    <p class="page-subtitle">Updates and announcements</p>
+                </div>
+
+                <div class="card mb-lg">
+                    <div class="flex items-center gap-md mb-md">
+                        <div class="card-icon" style="background: linear-gradient(135deg, #06b6d4, #0891b2);">
+                            <i class="fas fa-bullhorn"></i>
+                        </div>
+                        <div>
+                            <h3 class="card-title mb-0">New AI Features Released!</h3>
+                            <small class="text-secondary">2 hours ago</small>
+                        </div>
+                    </div>
+                    <p class="mb-md">We've enhanced our MCQ solver with better reasoning capabilities and added support for image-based questions.</p>
+                    <button class="btn btn-secondary">Learn More</button>
+                </div>
+
+                <div class="card mb-lg">
+                    <div class="flex items-center gap-md mb-md">
+                        <div class="card-icon" style="background: linear-gradient(135deg, #8b5cf6, #7c3aed);">
+                            <i class="fas fa-calendar"></i>
+                        </div>
+                        <div>
+                            <h3 class="card-title mb-0">Prelims 2025 Dates Announced</h3>
+                            <small class="text-secondary">1 day ago</small>
+                        </div>
+                    </div>
+                    <p class="mb-md">UPSC has announced the preliminary examination dates. Update your study schedule accordingly.</p>
+                    <button class="btn btn-secondary">View Details</button>
+                </div>
+
+                <div class="card">
+                    <div class="flex items-center gap-md mb-md">
+                        <div class="card-icon" style="background: linear-gradient(135deg, #10b981, #059669);">
+                            <i class="fas fa-user"></i>
+                        </div>
+                        <div>
+                            <h3 class="card-title mb-0">Developer Message</h3>
+                            <small class="text-secondary">3 days ago</small>
+                        </div>
+                    </div>
+                    <p class="mb-md">Thank you for using UPSC AI Mentor! Your feedback helps us improve. Feel free to reach out with suggestions.</p>
+                    <button class="btn btn-secondary" onclick="showModal('contactModal')">Contact Developer</button>
+                </div>
+            </section>
+
+            <!-- Settings Page -->
+            <section class="page-section" id="settings">
+                <div class="page-header">
+                    <h1 class="page-title">Settings</h1>
+                    <p class="page-subtitle">Customize your experience</p>
+                </div>
+
+                <div class="dashboard-grid">
+                    <div class="card">
+                        <h3 class="card-title mb-lg">API Configuration</h3>
+                        <div class="form-group">
+                            <label class="form-label">Gemini API Key</label>
+                            <input type="password" class="form-input" id="apiKey" placeholder="Enter your API key">
+                            <small class="text-secondary">Your API key is stored securely and never shared.</small>
+                        </div>
+                        
+                        <div class="form-group">
+                            <label class="form-label">AI Temperature</label>
+                            <select class="form-select" id="aiTemperature">
+                                <option value="0.3">Conservative (0.3)</option>
+                                <option value="0.5" selected>Balanced (0.5)</option>
+                                <option value="0.7">Creative (0.7)</option>
+                            </select>
+                        </div>
+                        
+                        <button class="btn btn-primary" onclick="saveSettings()">
+                            <i class="fas fa-save"></i>
+                            Save Configuration
+                        </button>
+                    </div>
+
+                    <div class="card">
+                        <h3 class="card-title mb-lg">Preferences</h3>
+                        <div class="form-group">
+                            <label class="form-label">Default Summary Length</label>
+                            <select class="form-select" id="summaryLength">
+                                <option value="short">Short (50-100 words)</option>
+                                <option value="medium" selected>Medium (100-200 words)</option>
+                                <option value="long">Long (200-300 words)</option>
+                            </select>
+                        </div>
+                        
+                        <div class="form-group">
+                            <label class="form-label">Theme</label>
+                            <select class="form-select" id="themeSelect">
+                                <option value="light" selected>Light</option>
+                                <option value="dark">Dark</option>
+                                <option value="auto">Auto</option>
+                            </select>
+                        </div>
+                        
+                        <div class="form-group">
+                            <label class="form-label">Notifications</label>
+                            <div style="display: flex; align-items: center; gap: 1rem;">
+                                <input type="checkbox" id="notificationsEnabled" checked>
+                                <label for="notificationsEnabled">Enable study reminders</label>
+                            </div>
+                        </div>
+                        
+                        <button class="btn btn-primary" onclick="savePreferences()">
+                            <i class="fas fa-save"></i>
+                            Save Preferences
+                        </button>
+                    </div>
+                </div>
+            </section>
+        </main>
     </div>
-    
-    <div id="controls">
-        <button id="startBtn">Start Camera</button>
-        <button id="stopBtn" disabled>Stop Camera</button>
+
+    <!-- Floating Action Button -->
+    <button class="fab" onclick="showModal('mentorModal')" title="Ask AI Mentor">
+        <i class="fas fa-robot"></i>
+    </button>
+
+    <!-- Theme Toggle -->
+    <button class="theme-toggle" onclick="toggleTheme()" title="Toggle Theme">
+        <i class="fas fa-moon" id="themeIcon"></i>
+    </button>
+
+    <!-- Mentor Modal -->
+    <div class="modal-overlay" id="mentorModal">
+        <div class="modal">
+            <div class="modal-header">
+                <h2 class="modal-title">Quick Ask AI Mentor</h2>
+                <button class="modal-close" onclick="hideModal('mentorModal')">
+                    <i class="fas fa-times"></i>
+                </button>
+            </div>
+            
+            <div class="form-group">
+                <label class="form-label">Your Question</label>
+                <textarea class="form-textarea" id="quickQuestion" placeholder="Ask your mentor anything..." rows="4"></textarea>
+            </div>
+            
+            <div class="flex gap-md justify-between">
+                <button class="btn btn-secondary" onclick="hideModal('mentorModal')">Cancel</button>
+                <button class="btn btn-primary" onclick="askQuickQuestion()">
+                    <i class="fas fa-paper-plane"></i>
+                    Ask Mentor
+                </button>
+            </div>
+            
+            <div id="quickAnswer" class="hidden mt-lg">
+                <div class="card" style="background: var(--background);">
+                    <h4 class="mb-sm">AI Mentor Response:</h4>
+                    <div id="quickAnswerText"></div>
+                </div>
+            </div>
+        </div>
     </div>
-    
-    <div id="error"></div>
-    
-    <div id="info">
-        <h3>Real-time Analysis</h3>
-        <div id="detections"></div>
+
+    <!-- Contact Developer Modal -->
+    <div class="modal-overlay" id="contactModal">
+        <div class="modal">
+            <div class="modal-header">
+                <h2 class="modal-title">Contact Developer</h2>
+                <button class="modal-close" onclick="hideModal('contactModal')">
+                    <i class="fas fa-times"></i>
+                </button>
+            </div>
+            
+            <div class="form-group">
+                <label class="form-label">Your Name</label>
+                <input type="text" class="form-input" id="contactName" placeholder="Enter your name">
+            </div>
+            
+            <div class="form-group">
+                <label class="form-label">Email</label>
+                <input type="email" class="form-input" id="contactEmail" placeholder="Enter your email">
+            </div>
+            
+            <div class="form-group">
+                <label class="form-label">Message</label>
+                <textarea class="form-textarea" id="contactMessage" placeholder="Your feedback or suggestion..." rows="6"></textarea>
+            </div>
+            
+            <div class="flex gap-md justify-between">
+                <button class="btn btn-secondary" onclick="hideModal('contactModal')">Cancel</button>
+                <button class="btn btn-primary" onclick="sendContactMessage()">
+                    <i class="fas fa-envelope"></i>
+                    Send Message
+                </button>
+            </div>
+        </div>
     </div>
 
     <script>
-        let video = document.getElementById('video');
-        let canvas = document.getElementById('canvas');
-        let ctx = canvas.getContext('2d');
-        let startBtn = document.getElementById('startBtn');
-        let stopBtn = document.getElementById('stopBtn');
-        let errorDiv = document.getElementById('error');
-        let detectionsDiv = document.getElementById('detections');
-        
-        let model;
-        let stream = null;
-        let isDetecting = false;
-        let vehicleTracks = {};
-        let nextId = 0;
-        
-        const vehicleClasses = ['car', 'truck', 'bus', 'motorcycle'];
-        const ASSUMED_FOCAL_LENGTH = 800;
-        const AVERAGE_VEHICLE_WIDTH = 1.8;
-        const FPS = 30;
-        const USER_SPEED = 20; // m/s (72 km/h)
-        
-        async function initModel() {
-            try {
-                model = await cocoSsd.load();
-                errorDiv.textContent = 'Model loaded successfully';
-                errorDiv.style.color = 'green';
-                errorDiv.style.display = 'block';
-                setTimeout(() => errorDiv.style.display = 'none', 3000);
-            } catch (err) {
-                showError('Failed to load model: ' + err.message);
+        // App State
+        let appState = {
+            currentPage: 'dashboard',
+            theme: 'light',
+            sidebarCollapsed: false,
+            chatMessages: [],
+            settings: {
+                apiKey: '',
+                temperature: 0.5,
+                summaryLength: 'medium'
             }
-        }
-        
-        async function setupCamera() {
-            try {
-                // Try preferred constraints (rear camera)
-                stream = await navigator.mediaDevices.getUserMedia({
-                    video: {
-                        facingMode: 'environment',
-                        width: { ideal: 640 },
-                        height: { ideal: 480 }
-                    }
-                });
-            } catch (err) {
-                // Fallback to any available camera
-                try {
-                    stream = await navigator.mediaDevices.getUserMedia({
-                        video: {
-                            width: { ideal: 640 },
-                            height: { ideal: 480 }
-                        }
-                    });
-                    showError('Rear camera unavailable, using default camera', false);
-                } catch (fallbackErr) {
-                    showError('Camera access failed: ' + fallbackErr.message);
-                    return false;
-                }
-            }
+        };
+
+        // Initialize App
+        document.addEventListener('DOMContentLoaded', function() {
+            initializeApp();
+            loadSettings();
+            setupEventListeners();
+        });
+
+        function initializeApp() {
+            // Set initial theme
+            const savedTheme = localStorage.getItem('theme') || 'light';
+            setTheme(savedTheme);
             
-            try {
-                video.srcObject = stream;
-                await new Promise(resolve => {
-                    video.onloadedmetadata = () => {
-                        canvas.width = video.videoWidth;
-                        canvas.height = video.videoHeight;
-                        video.play();
-                        resolve();
-                    };
-                });
-                return true;
-            } catch (err) {
-                showError('Video setup failed: ' + err.message);
-                return false;
-            }
-        }
-        
-        function showError(message, isWarning = true) {
-            errorDiv.textContent = message;
-            errorDiv.style.color = isWarning ? 'orange' : 'red';
-            errorDiv.style.display = 'block';
-        }
-        
-        function startDetection() {
-            isDetecting = true;
-            detectFrame();
-        }
-        
-        function stopDetection() {
-            isDetecting = false;
-            if (stream) {
-                stream.getTracks().forEach(track => track.stop());
-                stream = null;
-            }
-            video.srcObject = null;
-            startBtn.disabled = false;
-            stopBtn.disabled = true;
-            ctx.clearRect(0, 0, canvas.width, canvas.height);
-            detectionsDiv.innerHTML = '';
-            errorDiv.style.display = 'none';
-        }
-        
-        async function detectFrame() {
-            if (!isDetecting || !model) return;
+            // Initialize chat
+            initializeChat();
             
-            try {
-                const predictions = await model.detect(video);
-                ctx.clearRect(0, 0, canvas.width, canvas.height);
-                
-                let currentDetections = [];
-                
-                predictions.forEach(pred => {
-                    if (vehicleClasses.includes(pred.class)) {
-                        ctx.strokeStyle = '#00ff00';
-                        ctx.lineWidth = 2;
-                        ctx.strokeRect(pred.bbox[0], pred.bbox[1], pred.bbox[2], pred.bbox[3]);
-                        ctx.fillStyle = '#00ff00';
-                        ctx.font = '16px Arial';
-                        ctx.fillText(`${pred.class} ${Math.round(pred.score * 100)}%`, pred.bbox[0], pred.bbox[1] - 5);
-                        
-                        const bboxWidth = pred.bbox[2];
-                        const estimatedDistance = (AVERAGE_VEHICLE_WIDTH * ASSUMED_FOCAL_LENGTH) / bboxWidth;
-                        
-                        const centerX = pred.bbox[0] + pred.bbox[2] / 2;
-                        const centerY = pred.bbox[1] + pred.bbox[3] / 2;
-                        const position = { x: centerX, y: centerY, timestamp: Date.now() };
-                        
-                        let trackId = findClosestTrack(centerX, centerY);
-                        if (trackId === null) {
-                            trackId = nextId++;
-                            vehicleTracks[trackId] = { positions: [], speeds: [], distances: [] };
-                        }
-                        
-                        const track = vehicleTracks[trackId];
-                        track.positions.push(position);
-                        track.distances.push(estimatedDistance);
-                        
-                        if (track.positions.length > 60) {
-                            track.positions.shift();
-                            track.distances.shift();
-                        }
-                        
-                        if (track.positions.length >= 2) {
-                            const prevPos = track.positions[track.positions.length - 2];
-                            const dx = centerX - prevPos.x;
-                            const dy = centerY - prevPos.y;
-                            const pixelSpeed = Math.sqrt(dx*dx + dy*dy) / FPS;
-                            const pixelToMeter = 0.01 * (estimatedDistance / 10);
-                            const estimatedSpeed = pixelSpeed * pixelToMeter;
-                            
-                            track.speeds.push(estimatedSpeed);
-                            if (track.speeds.length > 60) track.speeds.shift();
-                            
-                            const avgSpeed = track.speeds.reduce((a, b) => a + b, 0) / track.speeds.length;
-                            const relativeSpeed = avgSpeed - USER_SPEED;
-                            
-                            let ttc = Infinity;
-                            let dangerLevel = 'low';
-                            if (relativeSpeed > 0 && estimatedDistance > 0) {
-                                ttc = estimatedDistance / relativeSpeed;
-                                if (ttc < 2) dangerLevel = 'high';
-                                else if (ttc < 5) dangerLevel = 'medium';
-                            }
-                            
-                            ctx.fillStyle = dangerLevel === 'high' ? '#ff0000' : dangerLevel === 'medium' ? '#ffff00' : '#00ff00';
-                            ctx.fillText(`Speed: ${Math.round(avgSpeed * 3.6)} km/h | Dist: ${Math.round(estimatedDistance)}m | TTC: ${ttc.toFixed(1)}s | Danger: ${dangerLevel}`, pred.bbox[0], pred.bbox[1] + pred.bbox[3] + 20);
-                            
-                            currentDetections.push({
-                                id: trackId,
-                                class: pred.class,
-                                speed: Math.round(avgSpeed * 3.6),
-                                distance: Math.round(estimatedDistance),
-                                ttc: ttc.toFixed(1),
-                                danger: dangerLevel
-                            });
-                        } else {
-                            currentDetections.push({
-                                id: trackId,
-                                class: pred.class,
-                                speed: 0,
-                                distance: Math.round(estimatedDistance),
-                                ttc: 'N/A',
-                                danger: 'low'
-                            });
-                        }
-                    }
-                });
-                
-                updateDetectionsUI(currentDetections);
-                
-                Object.keys(vehicleTracks).forEach(id => {
-                    if (Date.now() - vehicleTracks[id].positions[vehicleTracks[id].positions.length - 1].timestamp > 2000) {
-                        delete vehicleTracks[id];
-                    }
-                });
-                
-                requestAnimationFrame(detectFrame);
-            } catch (err) {
-                showError('Detection error: ' + err.message);
-            }
+            // Set exam date to next year
+            const examDate = document.getElementById('examDate');
+            const nextYear = new Date();
+            nextYear.setFullYear(nextYear.getFullYear() + 1);
+            nextYear.setMonth(5); // June
+            nextYear.setDate(15);
+            examDate.value = nextYear.toISOString().split('T')[0];
         }
-        
-        function findClosestTrack(x, y, threshold = 50) {
-            let closestId = null;
-            let minDist = threshold;
-            Object.keys(vehicleTracks).forEach(id => {
-                const lastPos = vehicleTracks[id].positions[vehicleTracks[id].positions.length - 1];
-                const dist = Math.sqrt((x - lastPos.x)**2 + (y - lastPos.y)**2);
-                if (dist < minDist) {
-                    minDist = dist;
-                    closestId = id;
+
+        function setupEventListeners() {
+            // Navigation
+            document.querySelectorAll('.nav-link').forEach(link => {
+                link.addEventListener('click', function(e) {
+                    e.preventDefault();
+                    const page = this.dataset.page;
+                    showPage(page);
+                });
+            });
+
+            // Sidebar toggle
+            document.getElementById('sidebarToggle').addEventListener('click', toggleSidebar);
+
+            // Chat input
+            document.getElementById('chatInput').addEventListener('keypress', function(e) {
+                if (e.key === 'Enter') {
+                    sendMessage();
                 }
             });
-            return closestId;
+
+            // Quick question input
+            document.getElementById('quickQuestion').addEventListener('keypress', function(e) {
+                if (e.key === 'Enter' && e.ctrlKey) {
+                    askQuickQuestion();
+                }
+            });
+
+            // Theme select
+            document.getElementById('themeSelect').addEventListener('change', function() {
+                setTheme(this.value);
+            });
+
+            // Modal clicks
+            document.querySelectorAll('.modal-overlay').forEach(overlay => {
+                overlay.addEventListener('click', function(e) {
+                    if (e.target === this) {
+                        hideModal(this.id);
+                    }
+                });
+            });
         }
-        
-        function updateDetectionsUI(detections) {
-            detectionsDiv.innerHTML = detections.map(det => 
-                `<div class="detection danger-${det.danger}">
-                    <strong>${det.class.toUpperCase()} #${det.id}</strong><br>
-                    Speed: ${det.speed} km/h | Distance: ${det.distance}m | TTC: ${det.ttc}s | Danger: ${det.danger}
-                </div>`
-            ).join('');
+
+        // Navigation
+        function showPage(pageId) {
+            // Hide all pages
+            document.querySelectorAll('.page-section').forEach(section => {
+                section.classList.remove('active');
+            });
+
+            // Show target page
+            const targetPage = document.getElementById(pageId);
+            if (targetPage) {
+                targetPage.classList.add('active');
+                appState.currentPage = pageId;
+                
+                // Update navigation
+                document.querySelectorAll('.nav-link').forEach(link => {
+                    link.classList.remove('active');
+                });
+                document.querySelector(`[data-page="${pageId}"]`).classList.add('active');
+            }
         }
-        
-        startBtn.addEventListener('click', async () => {
-            errorDiv.style.display = 'none';
-            if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
-                showError('Camera API not supported by this browser');
-                return;
-            }
-            if (location.protocol !== 'https:' && location.hostname !== 'localhost') {
-                showError('Camera access requires HTTPS or localhost');
-                return;
-            }
-            startBtn.disabled = true;
-            await initModel();
-            if (await setupCamera()) {
-                stopBtn.disabled = false;
-                setTimeout(startDetection, 1000);
+
+        function toggleSidebar() {
+            const container = document.getElementById('appContainer');
+            const sidebar = document.getElementById('sidebar');
+            const toggleIcon = document.querySelector('#sidebarToggle i');
+            
+            appState.sidebarCollapsed = !appState.sidebarCollapsed;
+            
+            if (appState.sidebarCollapsed) {
+                container.classList.add('sidebar-collapsed');
+                toggleIcon.classList.remove('fa-chevron-left');
+                toggleIcon.classList.add('fa-chevron-right');
             } else {
-                startBtn.disabled = false;
+                container.classList.remove('sidebar-collapsed');
+                toggleIcon.classList.remove('fa-chevron-right');
+                toggleIcon.classList.add('fa-chevron-left');
+            }
+        }
+
+        // Theme Management
+        function toggleTheme() {
+            const newTheme = appState.theme === 'light' ? 'dark' : 'light';
+            setTheme(newTheme);
+        }
+
+        function setTheme(theme) {
+            appState.theme = theme;
+            document.documentElement.setAttribute('data-theme', theme);
+            
+            const themeIcon = document.getElementById('themeIcon');
+            const themeSelect = document.getElementById('themeSelect');
+            
+            if (theme === 'dark') {
+                themeIcon.classList.remove('fa-moon');
+                themeIcon.classList.add('fa-sun');
+            } else {
+                themeIcon.classList.remove('fa-sun');
+                themeIcon.classList.add('fa-moon');
+            }
+            
+            if (themeSelect) {
+                themeSelect.value = theme;
+            }
+            
+            localStorage.setItem('theme', theme);
+        }
+
+        // Modal Management
+        function showModal(modalId) {
+            const modal = document.getElementById(modalId);
+            if (modal) {
+                modal.classList.add('active');
+                document.body.style.overflow = 'hidden';
+            }
+        }
+
+        function hideModal(modalId) {
+            const modal = document.getElementById(modalId);
+            if (modal) {
+                modal.classList.remove('active');
+                document.body.style.overflow = '';
+                
+                // Clear quick answer
+                if (modalId === 'mentorModal') {
+                    document.getElementById('quickAnswer').classList.add('hidden');
+                    document.getElementById('quickQuestion').value = '';
+                }
+            }
+        }
+
+        // AI Features (Mock implementations)
+        async function summarizeArticle() {
+            const articleInput = document.getElementById('articleInput');
+            const summaryResults = document.getElementById('summaryResults');
+            const prelimsSummary = document.getElementById('prelimsSummary');
+            const mainsSummary = document.getElementById('mainsSummary');
+            const generatedMCQs = document.getElementById('generatedMCQs');
+
+            if (!articleInput.value.trim()) {
+                alert('Please enter article content first.');
+                return;
+            }
+
+            // Show loading state
+            summaryResults.classList.remove('hidden');
+            prelimsSummary.innerHTML = '<div class="loading-spinner"></div>';
+            mainsSummary.innerHTML = '<div class="loading-spinner"></div>';
+            generatedMCQs.innerHTML = '<div class="loading-spinner"></div>';
+
+            // Simulate API call
+            setTimeout(() => {
+                prelimsSummary.innerHTML = `
+                    <p><strong>Key Facts:</strong> Economic Survey 2024 projects GDP growth at 6.5-7%. 
+                    Inflation expected to moderate to 4.5%. Focus on digital infrastructure and green energy transitions.</p>
+                `;
+
+                mainsSummary.innerHTML = `
+                    <p><strong>Context:</strong> The Economic Survey 2024 presents a comprehensive analysis of India's economic performance and future trajectory...</p>
+                    <p><strong>Key Issues:</strong> Post-pandemic recovery, inflation management, employment generation, and sustainable development goals.</p>
+                    <p><strong>Government Response:</strong> Policy focus on infrastructure development, digital transformation, and climate action.</p>
+                    <p><strong>Implications:</strong> Strong growth outlook with challenges in inflation control and job creation.</p>
+                `;
+
+                generatedMCQs.innerHTML = `
+                    <div class="mb-md">
+                        <p><strong>1.</strong> According to Economic Survey 2024, what is the projected GDP growth rate?</p>
+                        <p>A) 5.5-6% B) 6.5-7% C) 7.5-8% D) 8-8.5%</p>
+                        <small class="text-secondary">Answer: B) 6.5-7%</small>
+                    </div>
+                `;
+            }, 2000);
+        }
+
+        async function generateMCQs() {
+            const articleInput = document.getElementById('articleInput');
+            
+            if (!articleInput.value.trim()) {
+                alert('Please enter article content first.');
+                return;
+            }
+
+            // Simulate MCQ generation
+            setTimeout(() => {
+                showPage('mcq-solver');
+                document.getElementById('mcqQuestion').value = `Based on the Economic Survey 2024, what is the government's primary focus for economic recovery?
+
+A) Increasing direct cash transfers
+B) Digital infrastructure and green energy
+C) Reducing taxation rates
+D) Import substitution policies`;
+            }, 1000);
+        }
+
+        async function solveMCQ() {
+            const mcqQuestion = document.getElementById('mcqQuestion');
+            const mcqAnalysis = document.getElementById('mcqAnalysis');
+            const mcqSolution = document.getElementById('mcqSolution');
+
+            if (!mcqQuestion.value.trim()) {
+                alert('Please enter an MCQ question first.');
+                return;
+            }
+
+            mcqAnalysis.classList.remove('hidden');
+            mcqSolution.innerHTML = '<div class="loading-spinner"></div>';
+
+            // Simulate analysis
+            setTimeout(() => {
+                mcqSolution.innerHTML = `
+                    <div class="mb-lg">
+                        <h4 class="mb-sm">Correct Answer: B) Digital infrastructure and green energy</h4>
+                        
+                        <h5 class="mb-sm">Step-by-step Analysis:</h5>
+                        <p class="mb-md"><strong>Option A (Incorrect):</strong> While cash transfers are part of welfare schemes, they are not the primary focus for long-term economic recovery.</p>
+                        <p class="mb-md"><strong>Option B (Correct):</strong> The Economic Survey 2024 emphasizes digital transformation and green energy as key pillars for sustainable economic growth.</p>
+                        <p class="mb-md"><strong>Option C (Incorrect):</strong> Tax reforms are mentioned but not as the primary recovery strategy.</p>
+                        <p class="mb-md"><strong>Option D (Incorrect):</strong> Import substitution is discussed in specific sectors but not as the main focus.</p>
+                        
+                        <h5 class="mb-sm">Key Learning:</h5>
+                        <p>India's economic strategy post-pandemic focuses on building resilient infrastructure and promoting sustainable development through digital and green initiatives.</p>
+                    </div>
+                `;
+            }, 2000);
+        }
+
+        async function reviewAnswer() {
+            const question = document.getElementById('mainQuestion');
+            const answer = document.getElementById('studentAnswer');
+            const answerReview = document.getElementById('answerReview');
+            const reviewFeedback = document.getElementById('reviewFeedback');
+
+            if (!question.value.trim() || !answer.value.trim()) {
+                alert('Please enter both question and answer.');
+                return;
+            }
+
+            answerReview.classList.remove('hidden');
+            reviewFeedback.innerHTML = '<div class="loading-spinner"></div>';
+
+            // Simulate review
+            setTimeout(() => {
+                reviewFeedback.innerHTML = `
+                    <div class="mb-lg">
+                        <h4 class="mb-md">Score: 11/15</h4>
+                        
+                        <h5 class="mb-sm">Strengths:</h5>
+                        <ul class="mb-md" style="margin-left: 1rem;">
+                            <li>Good introduction with context setting</li>
+                            <li>Relevant examples provided</li>
+                            <li>Logical flow of arguments</li>
+                        </ul>
+                        
+                        <h5 class="mb-sm">Areas for Improvement:</h5>
+                        <ul class="mb-md" style="margin-left: 1rem;">
+                            <li>Add more recent data and statistics</li>
+                            <li>Include government initiatives/schemes</li>
+                            <li>Strengthen the conclusion with way forward</li>
+                        </ul>
+                        
+                        <h5 class="mb-sm">Enhanced Version:</h5>
+                        <div class="card" style="background: var(--surface-hover); padding: 1rem;">
+                            <p class="mb-sm">Your enhanced answer would include specific data from Economic Survey 2024, mention of relevant government schemes like PM-KUSUM for solar energy, and a conclusion highlighting India's commitment to achieving net-zero emissions by 2070...</p>
+                        </div>
+                    </div>
+                `;
+            }, 2000);
+        }
+
+        // Chat Functions
+        function initializeChat() {
+            const chatMessages = document.getElementById('chatMessages');
+            appState.chatMessages = [{
+                type: 'bot',
+                message: "Hello! I'm your AI Mentor. How can I help you with your UPSC preparation today?",
+                timestamp: new Date()
+            }];
+        }
+
+        function sendMessage() {
+            const chatInput = document.getElementById('chatInput');
+            const message = chatInput.value.trim();
+            
+            if (!message) return;
+
+            // Add user message
+            addChatMessage('user', message);
+            chatInput.value = '';
+
+            // Simulate AI response
+            setTimeout(() => {
+                const responses = [
+                    "That's a great question! For current affairs preparation, I recommend focusing on issues that have appeared in multiple sources over the past 6 months.",
+                    "Based on the syllabus, this topic falls under General Studies Paper II. Let me break down the key aspects you should focus on...",
+                    "For effective answer writing, remember the structure: Introduction (10%), Body (75%), and Conclusion (15%). Each paragraph should have a clear theme.",
+                    "This concept is frequently asked in prelims. Make sure to understand both the theoretical aspects and recent developments.",
+                    "Let me suggest a study plan for this topic. Start with NCERT, then move to standard reference books, and finally practice previous year questions."
+                ];
+                
+                const randomResponse = responses[Math.floor(Math.random() * responses.length)];
+                addChatMessage('bot', randomResponse);
+            }, 1000);
+        }
+
+        function addChatMessage(type, message) {
+            const chatMessages = document.getElementById('chatMessages');
+            const messageDiv = document.createElement('div');
+            messageDiv.className = `chat-message ${type}`;
+            
+            messageDiv.innerHTML = `
+                <div class="chat-avatar">
+                    <i class="fas ${type === 'user' ? 'fa-user' : 'fa-robot'}"></i>
+                </div>
+                <div class="chat-bubble">
+                    <p>${message}</p>
+                </div>
+            `;
+            
+            chatMessages.appendChild(messageDiv);
+            chatMessages.scrollTop = chatMessages.scrollHeight;
+            
+            // Store in app state
+            appState.chatMessages.push({
+                type,
+                message,
+                timestamp: new Date()
+            });
+        }
+
+        function askQuickQuestion() {
+            const question = document.getElementById('quickQuestion').value.trim();
+            const quickAnswer = document.getElementById('quickAnswer');
+            const quickAnswerText = document.getElementById('quickAnswerText');
+
+            if (!question) {
+                alert('Please enter a question first.');
+                return;
+            }
+
+            quickAnswer.classList.remove('hidden');
+            quickAnswerText.innerHTML = '<div class="loading-spinner"></div>';
+
+            // Simulate AI response
+            setTimeout(() => {
+                const responses = {
+                    "study plan": "I recommend creating a 6-month study plan with 4 months for syllabus completion and 2 months for revision. Allocate 40% time to static topics, 30% to current affairs, and 30% to answer writing practice.",
+                    "current affairs": "Focus on issues from the past 6-12 months. Read one newspaper daily, maintain monthly compilations, and practice linking current events to static syllabus topics.",
+                    "answer writing": "Practice writing 150-250 word answers daily. Focus on structure: clear introduction, logical body with subheadings, and conclusive ending. Use facts, figures, and examples to support your arguments.",
+                    "time management": "Create a realistic timetable based on your available hours. Use the Pomodoro technique for focused study. Allocate specific time slots for each subject and stick to the schedule.",
+                    "default": "Thank you for your question. Based on UPSC preparation best practices, I suggest maintaining consistency in your study routine, focusing on understanding concepts rather than rote learning, and regularly practicing answer writing and MCQs."
+                };
+
+                let response = responses.default;
+                const questionLower = question.toLowerCase();
+
+                for (const [key, value] of Object.entries(responses)) {
+                    if (questionLower.includes(key)) {
+                        response = value;
+                        break;
+                    }
+                }
+
+                quickAnswerText.innerHTML = `<p>${response}</p>`;
+            }, 1500);
+        }
+
+        // Settings Functions
+        function loadSettings() {
+            const savedSettings = localStorage.getItem('upscAISettings');
+            if (savedSettings) {
+                appState.settings = { ...appState.settings, ...JSON.parse(savedSettings) };
+                
+                // Apply saved settings to UI
+                const apiKeyInput = document.getElementById('apiKey');
+                const temperatureSelect = document.getElementById('aiTemperature');
+                const summarySelect = document.getElementById('summaryLength');
+                
+                if (apiKeyInput) apiKeyInput.value = appState.settings.apiKey || '';
+                if (temperatureSelect) temperatureSelect.value = appState.settings.temperature || '0.5';
+                if (summarySelect) summarySelect.value = appState.settings.summaryLength || 'medium';
+            }
+        }
+
+        function saveSettings() {
+            const apiKey = document.getElementById('apiKey').value;
+            const temperature = document.getElementById('aiTemperature').value;
+            
+            appState.settings.apiKey = apiKey;
+            appState.settings.temperature = parseFloat(temperature);
+            
+            localStorage.setItem('upscAISettings', JSON.stringify(appState.settings));
+            
+            // Show success message
+            showNotification('Settings saved successfully!', 'success');
+        }
+
+        function savePreferences() {
+            const summaryLength = document.getElementById('summaryLength').value;
+            const theme = document.getElementById('themeSelect').value;
+            const notifications = document.getElementById('notificationsEnabled').checked;
+            
+            appState.settings.summaryLength = summaryLength;
+            appState.settings.notifications = notifications;
+            
+            localStorage.setItem('upscAISettings', JSON.stringify(appState.settings));
+            setTheme(theme);
+            
+            showNotification('Preferences saved successfully!', 'success');
+        }
+
+        // Study Scheduler Functions
+        function generateSchedule() {
+            const hours = document.getElementById('studyHours').value;
+            const examDate = document.getElementById('examDate').value;
+            
+            if (!examDate) {
+                alert('Please select an exam date first.');
+                return;
+            }
+            
+            // Calculate days remaining
+            const today = new Date();
+            const exam = new Date(examDate);
+            const daysRemaining = Math.ceil((exam - today) / (1000 * 60 * 60 * 24));
+            
+            if (daysRemaining <= 0) {
+                alert('Please select a future exam date.');
+                return;
+            }
+            
+            // Generate schedule based on remaining days and available hours
+            const weeklySchedule = document.getElementById('weeklySchedule');
+            const totalHours = parseInt(hours);
+            
+            let scheduleHTML = `
+                <div class="mb-md">
+                    <strong>Schedule Generated for ${daysRemaining} days remaining</strong>
+                </div>
+                <div class="mb-md">
+                    <strong>Daily ${totalHours} hours breakdown:</strong>
+                </div>
+            `;
+            
+            const subjects = [
+                'History & Art Culture',
+                'Geography & Environment',
+                'Polity & Governance',
+                'Economy & Social Issues',
+                'Science & Technology',
+                'International Relations',
+                'Current Affairs & Ethics'
+            ];
+            
+            const dailyPlans = [
+                `Static Topics (${Math.floor(totalHours * 0.5)}h), Current Affairs (${Math.floor(totalHours * 0.2)}h), Practice (${Math.floor(totalHours * 0.3)}h)`,
+                `Answer Writing (${Math.floor(totalHours * 0.4)}h), Revision (${Math.floor(totalHours * 0.3)}h), MCQ Practice (${Math.floor(totalHours * 0.3)}h)`,
+                `New Topics (${Math.floor(totalHours * 0.6)}h), Previous Year Questions (${Math.floor(totalHours * 0.4)}h)`,
+                `Mock Test (${Math.floor(totalHours * 0.5)}h), Analysis & Improvement (${Math.floor(totalHours * 0.5)}h)`,
+                `Comprehensive Revision (${Math.floor(totalHours * 0.7)}h), Weak Areas (${Math.floor(totalHours * 0.3)}h)`,
+                `Current Affairs Update (${Math.floor(totalHours * 0.3)}h), Answer Writing (${Math.floor(totalHours * 0.4)}h), General Revision (${Math.floor(totalHours * 0.3)}h)`,
+                `Full Length Test (${Math.floor(totalHours * 0.6)}h), Rest & Recreation (${Math.floor(totalHours * 0.4)}h)`
+            ];
+            
+            const days = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday'];
+            
+            days.forEach((day, index) => {
+                scheduleHTML += `
+                    <div class="mb-md">
+                        <strong>${day}:</strong> ${dailyPlans[index]}
+                    </div>
+                `;
+            });
+            
+            weeklySchedule.innerHTML = scheduleHTML;
+            
+            showNotification('Study schedule generated successfully!', 'success');
+        }
+
+        // Contact Functions
+        function sendContactMessage() {
+            const name = document.getElementById('contactName').value;
+            const email = document.getElementById('contactEmail').value;
+            const message = document.getElementById('contactMessage').value;
+            
+            if (!name || !email || !message) {
+                alert('Please fill in all fields.');
+                return;
+            }
+            
+            // Simulate sending message
+            setTimeout(() => {
+                hideModal('contactModal');
+                showNotification('Message sent successfully! The developer will get back to you soon.', 'success');
+                
+                // Clear form
+                document.getElementById('contactName').value = '';
+                document.getElementById('contactEmail').value = '';
+                document.getElementById('contactMessage').value = '';
+            }, 1000);
+        }
+
+        // Utility Functions
+        function showNotification(message, type = 'info') {
+            const notification = document.createElement('div');
+            notification.className = `notification notification-${type}`;
+            notification.style.cssText = `
+                position: fixed;
+                top: 2rem;
+                right: 2rem;
+                background: ${type === 'success' ? '#10b981' : '#f59e0b'};
+                color: white;
+                padding: 1rem 1.5rem;
+                border-radius: 0.5rem;
+                box-shadow: 0 10px 15px -3px rgb(0 0 0 / 0.1);
+                z-index: 1001;
+                animation: slideInRight 0.3s ease-out;
+                max-width: 300px;
+            `;
+            notification.textContent = message;
+            
+            document.body.appendChild(notification);
+            
+            // Auto remove after 4 seconds
+            setTimeout(() => {
+                notification.style.animation = 'slideOutRight 0.3s ease-in';
+                setTimeout(() => {
+                    document.body.removeChild(notification);
+                }, 300);
+            }, 4000);
+        }
+
+        // Add CSS animations for notifications
+        const notificationStyles = document.createElement('style');
+        notificationStyles.textContent = `
+            @keyframes slideInRight {
+                from {
+                    transform: translateX(100%);
+                    opacity: 0;
+                }
+                to {
+                    transform: translateX(0);
+                    opacity: 1;
+                }
+            }
+            
+            @keyframes slideOutRight {
+                from {
+                    transform: translateX(0);
+                    opacity: 1;
+                }
+                to {
+                    transform: translateX(100%);
+                    opacity: 0;
+                }
+            }
+        `;
+        document.head.appendChild(notificationStyles);
+
+        // Mobile menu toggle
+        function toggleMobileMenu() {
+            const sidebar = document.getElementById('sidebar');
+            sidebar.classList.toggle('mobile-open');
+        }
+
+        // Add mobile menu button for small screens
+        function addMobileMenuButton() {
+            if (window.innerWidth <= 768) {
+                const mobileMenuBtn = document.createElement('button');
+                mobileMenuBtn.className = 'mobile-menu-btn';
+                mobileMenuBtn.innerHTML = '<i class="fas fa-bars"></i>';
+                mobileMenuBtn.style.cssText = `
+                    position: fixed;
+                    top: 1rem;
+                    left: 1rem;
+                    width: 50px;
+                    height: 50px;
+                    background: var(--primary-color);
+                    color: white;
+                    border: none;
+                    border-radius: 0.5rem;
+                    font-size: 1.25rem;
+                    cursor: pointer;
+                    box-shadow: var(--shadow);
+                    z-index: 1001;
+                `;
+                mobileMenuBtn.onclick = toggleMobileMenu;
+                document.body.appendChild(mobileMenuBtn);
+            }
+        }
+
+        // Handle window resize
+        window.addEventListener('resize', function() {
+            if (window.innerWidth > 768) {
+                const sidebar = document.getElementById('sidebar');
+                sidebar.classList.remove('mobile-open');
+            }
+            addMobileMenuButton();
+        });
+
+        // Initial mobile menu setup
+        addMobileMenuButton();
+
+        // Demo data and interactions
+        function initializeDemoData() {
+            // Add sample current affairs
+            const sampleArticle = `Economic Survey 2024 Highlights Key Growth Areas
+            
+The Economic Survey 2024, tabled in Parliament, projects India's GDP growth at 6.5-7% for the fiscal year. The survey emphasizes digital infrastructure development and green energy transition as primary drivers of economic recovery post-pandemic.
+
+Key highlights include:
+- Focus on manufacturing sector revival
+- Digital India initiatives expansion
+- Climate change mitigation strategies
+- Employment generation through skill development
+- Infrastructure development in rural areas
+
+The survey also addresses concerns about inflation management and suggests policy measures to maintain price stability while promoting growth.`;
+
+            // Pre-fill demo content when needed
+            window.loadDemoContent = function() {
+                document.getElementById('articleInput').value = sampleArticle;
+            };
+
+            // Add demo MCQ
+            window.loadDemoMCQ = function() {
+                document.getElementById('mcqQuestion').value = `Which of the following best describes India's approach to economic recovery as per Economic Survey 2024?
+
+A) Focus primarily on agricultural reforms and rural development
+B) Emphasis on digital infrastructure and green energy transition  
+C) Priority to manufacturing exports and foreign investment
+D) Concentration on service sector expansion and urbanization`;
+            };
+
+            // Add demo answer
+            window.loadDemoAnswer = function() {
+                document.getElementById('mainQuestion').value = "Discuss the significance of digital infrastructure in India's post-pandemic economic recovery. (250 words)";
+                document.getElementById('studentAnswer').value = `Digital infrastructure has emerged as a crucial pillar for India's economic recovery in the post-pandemic era. The COVID-19 pandemic accelerated digital adoption across sectors, highlighting the importance of robust digital foundations.
+
+The significance can be understood through multiple dimensions. Firstly, digital infrastructure enables financial inclusion through digital payment systems, benefiting millions of unbanked populations. Secondly, it supports the growth of digital commerce, allowing businesses to reach wider markets and maintain operations during lockdowns.
+
+Educational sector transformation through online learning platforms has ensured continuity of learning. Healthcare delivery through telemedicine has expanded access to remote areas. Government service delivery has improved through digital platforms, reducing corruption and increasing transparency.
+
+Digital infrastructure also supports the growth of startups and MSMEs by providing platforms for innovation and market access. The gig economy has flourished, creating new employment opportunities.
+
+However, challenges remain in terms of digital divide, cybersecurity concerns, and the need for skill development to match digital requirements.
+
+In conclusion, digital infrastructure serves as a multiplier effect for economic growth, enabling innovation, inclusion, and efficiency across sectors while positioning India as a global digital leader.`;
+            };
+        }
+
+        // Initialize demo data
+        initializeDemoData();
+
+        // Add demo buttons to pages
+        document.addEventListener('DOMContentLoaded', function() {
+            // Add demo button to current affairs page
+            const currentAffairsCard = document.querySelector('#current-affairs .card');
+            if (currentAffairsCard) {
+                const demoBtn = document.createElement('button');
+                demoBtn.className = 'btn btn-secondary';
+                demoBtn.innerHTML = '<i class="fas fa-file-alt"></i> Load Demo Article';
+                demoBtn.onclick = loadDemoContent;
+                demoBtn.style.marginRight = '1rem';
+                currentAffairsCard.querySelector('.flex').insertBefore(demoBtn, currentAffairsCard.querySelector('.flex').firstChild);
+            }
+
+            // Add demo button to MCQ page
+            const mcqCard = document.querySelector('#mcq-solver .card');
+            if (mcqCard) {
+                const demoBtn = document.createElement('button');
+                demoBtn.className = 'btn btn-secondary';
+                demoBtn.innerHTML = '<i class="fas fa-question-circle"></i> Load Demo MCQ';
+                demoBtn.onclick = loadDemoMCQ;
+                demoBtn.style.marginRight = '1rem';
+                const analyzeBtn = mcqCard.querySelector('.btn-primary');
+                analyzeBtn.parentNode.insertBefore(demoBtn, analyzeBtn);
+            }
+
+            // Add demo button to answer reviewer page
+            const answerCard = document.querySelector('#answer-reviewer .card');
+            if (answerCard) {
+                const demoBtn = document.createElement('button');
+                demoBtn.className = 'btn btn-secondary';
+                demoBtn.innerHTML = '<i class="fas fa-file-text"></i> Load Demo Answer';
+                demoBtn.onclick = loadDemoAnswer;
+                demoBtn.style.marginRight = '1rem';
+                const reviewBtn = answerCard.querySelector('.btn-primary');
+                reviewBtn.parentNode.insertBefore(demoBtn, reviewBtn);
             }
         });
-        
-        stopBtn.addEventListener('click', stopDetection);
+
+        // Keyboard shortcuts
+        document.addEventListener('keydown', function(e) {
+            // Ctrl+M to toggle sidebar
+            if (e.ctrlKey && e.key === 'm') {
+                e.preventDefault();
+                toggleSidebar();
+            }
+            
+            // Ctrl+/ to open mentor
+            if (e.ctrlKey && e.key === '/') {
+                e.preventDefault();
+                showModal('mentorModal');
+            }
+            
+            // Escape to close modals
+            if (e.key === 'Escape') {
+                document.querySelectorAll('.modal-overlay.active').forEach(modal => {
+                    hideModal(modal.id);
+                });
+            }
+        });
+
+        // Progressive Web App features
+        if ('serviceWorker' in navigator) {
+            window.addEventListener('load', function() {
+                navigator.serviceWorker.register('/sw.js').then(function(registration) {
+                    console.log('ServiceWorker registered successfully');
+                }, function(err) {
+                    console.log('ServiceWorker registration failed');
+                });
+            });
+        }
+
+        // Add install prompt for PWA
+        let deferredPrompt;
+        window.addEventListener('beforeinstallprompt', (e) => {
+            deferredPrompt = e;
+            
+            // Show install button
+            const installBtn = document.createElement('button');
+            installBtn.className = 'btn btn-accent';
+            installBtn.innerHTML = '<i class="fas fa-download"></i> Install App';
+            installBtn.style.cssText = `
+                position: fixed;
+                bottom: 6rem;
+                right: 2rem;
+                z-index: 100;
+            `;
+            installBtn.onclick = () => {
+                deferredPrompt.prompt();
+                deferredPrompt.userChoice.then((choiceResult) => {
+                    if (choiceResult.outcome === 'accepted') {
+                        console.log('User accepted the install prompt');
+                        document.body.removeChild(installBtn);
+                    }
+                    deferredPrompt = null;
+                });
+            };
+            
+            document.body.appendChild(installBtn);
+            
+            // Hide after 10 seconds if not used
+            setTimeout(() => {
+                if (document.body.contains(installBtn)) {
+                    installBtn.style.opacity = '0.7';
+                }
+            }, 10000);
+        });
+
+        // Performance monitoring
+        window.addEventListener('load', function() {
+            const loadTime = performance.timing.loadEventEnd - performance.timing.navigationStart;
+            console.log('Page loaded in:', loadTime + 'ms');
+            
+            // Log slow operations
+            const observer = new PerformanceObserver((list) => {
+                list.getEntries().forEach((entry) => {
+                    if (entry.duration > 100) {
+                        console.warn('Slow operation detected:', entry.name, entry.duration + 'ms');
+                    }
+                });
+            });
+            
+            observer.observe({entryTypes: ['measure', 'navigation']});
+        });
+
+        // Analytics placeholder
+        function trackEvent(action, category, label) {
+            console.log('Event tracked:', { action, category, label });
+            // Implement actual analytics here
+        }
+
+        // Track page views
+        const originalShowPage = showPage;
+        showPage = function(pageId) {
+            originalShowPage(pageId);
+            trackEvent('page_view', 'navigation', pageId);
+        };
+
+        // Auto-save functionality
+        let autoSaveTimeout;
+        function setupAutoSave() {
+            const inputs = document.querySelectorAll('textarea, input[type="text"]');
+            inputs.forEach(input => {
+                input.addEventListener('input', function() {
+                    clearTimeout(autoSaveTimeout);
+                    autoSaveTimeout = setTimeout(() => {
+                        const data = {
+                            [this.id]: this.value,
+                            timestamp: new Date().toISOString()
+                        };
+                        localStorage.setItem('upsc-ai-autosave', JSON.stringify(data));
+                    }, 2000);
+                });
+            });
+        }
+
+        // Load auto-saved data
+        function loadAutoSavedData() {
+            const saved = localStorage.getItem('upsc-ai-autosave');
+            if (saved) {
+                const data = JSON.parse(saved);
+                Object.entries(data).forEach(([id, value]) => {
+                    if (id !== 'timestamp') {
+                        const element = document.getElementById(id);
+                        if (element && !element.value) {
+                            element.value = value;
+                        }
+                    }
+                });
+            }
+        }
+
+        // Initialize auto-save
+        setTimeout(() => {
+            setupAutoSave();
+            loadAutoSavedData();
+        }, 1000);
+
+        // Add accessibility improvements
+        function improveAccessibility() {
+            // Add ARIA labels
+            document.querySelector('.fab').setAttribute('aria-label', 'Ask AI Mentor');
+            document.querySelector('.theme-toggle').setAttribute('aria-label', 'Toggle dark mode');
+            
+            // Add keyboard navigation for cards
+            document.querySelectorAll('.card').forEach(card => {
+                card.setAttribute('tabindex', '0');
+                card.addEventListener('keypress', function(e) {
+                    if (e.key === 'Enter' || e.key === ' ') {
+                        const btn = this.querySelector('.btn');
+                        if (btn) btn.click();
+                    }
+                });
+            });
+            
+            // Improve focus indicators
+            const focusStyle = document.createElement('style');
+            focusStyle.textContent = `
+                *:focus {
+                    outline: 2px solid var(--primary-color);
+                    outline-offset: 2px;
+                }
+                
+                .btn:focus {
+                    box-shadow: 0 0 0 3px rgba(55, 48, 163, 0.3);
+                }
+            `;
+            document.head.appendChild(focusStyle);
+        }
+
+        // Initialize accessibility features
+        improveAccessibility();
+
+        // Final initialization message
+        console.log('UPSC AI Mentor initialized successfully!');
+        console.log('Features: Dashboard, Current Affairs, MCQ Solver, Answer Reviewer, AI Mentor, Study Planner');
+        console.log('Keyboard shortcuts: Ctrl+M (toggle sidebar), Ctrl+/ (open mentor), Esc (close modals)');
     </script>
 </body>
 </html>
